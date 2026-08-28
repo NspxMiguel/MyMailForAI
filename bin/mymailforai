@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Entrypoint do MyMailForAI — roda direto do clone, sem instalar nada."""
+
+import os
+import sys
+
+# realpath, não abspath: instalado, este arquivo é um symlink, e abspath pararia
+# no symlink em vez de chegar no clone onde mora o pacote.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from mymailforai.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())
