@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# artefatos de build do app; o cask compila na máquina de quem instala
+mac/.build/
+mac/MyMailForAI.app/
+
+# Notas de trabalho: são minhas e do Claude, não do repositório.
+PEDIDOS.md
+CONTRATO.md
+IDEIAS.md
+NOTAS.md
+TRABALHO.md
+PROMPT-*.md
