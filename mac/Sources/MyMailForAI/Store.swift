@@ -9,6 +9,9 @@ import UserNotifications
 final class Store: ObservableObject {
     static let shared = Store()
 
+    /// O item da barra escuta isto para redesenhar o contador.
+    static let filaMudou = Notification.Name("MyMailForAI.filaMudou")
+
     @Published var accounts: [Account] = []
     @Published var pending: [QueueItem] = []
     @Published var defaultAccount: String?
@@ -17,6 +20,8 @@ final class Store: ObservableObject {
     @Published var error: String?
     @Published var claudeConnected = false
     @Published var cliMissing = false
+    /// Trocar de idioma redesenha o painel inteiro: os textos são estáticos.
+    @Published var langTick = 0
 
     private var rapido: Timer?
     private var lento: Timer?
@@ -121,7 +126,9 @@ final class Store: ObservableObject {
                     self.defaultAccount = lista.default
                 }
                 let novos = itens.filter { item in !self.pending.contains(where: { $0.id == item.id }) }
+                let mudou = itens.count != self.pending.count
                 self.pending = itens
+                if mudou { NotificationCenter.default.post(name: Store.filaMudou, object: nil) }
                 // O contador na barra só ajuda quem está olhando pra ela. Um
                 // aviso é o que faz o envio parado não ficar parado a tarde toda.
                 for item in novos { self.avisar(item) }
@@ -203,6 +210,13 @@ final class Store: ObservableObject {
     }
 
     func setDefault(_ account: String) { agir(["default", account, "--json"]) }
+
+    func setLanguage(_ code: String) {
+        L.escolher(code)
+        langTick += 1
+        // O CLI guarda a mesma escolha: terminal e painel falam o mesmo idioma.
+        agir(["lang", code, "--json"])
+    }
 
     func logout(_ account: String) { agir(["logout", account, "--json"]) }
 

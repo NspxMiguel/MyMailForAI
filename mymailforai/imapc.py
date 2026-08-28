@@ -452,6 +452,9 @@ def move(conn, uid: int, folder: str, destino: str) -> None:
 
 
 def append(conn, folder: str, bruto: bytes, flags: str = "") -> None:
+    import time
     marca = "(%s)" % flags if flags else None
-    _ok(conn.append(_quote(folder), marca, imaplib.Time2Internaldate(datetime.datetime.now()), bruto),
+    # time.time(), não datetime.now(): o Time2Internaldate recusa datetime sem
+    # fuso ("date_time must be aware") e derrubava o APPEND na pasta Enviados.
+    _ok(conn.append(_quote(folder), marca, imaplib.Time2Internaldate(time.time()), bruto),
         f"APPEND {folder}")

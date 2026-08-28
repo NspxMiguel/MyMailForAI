@@ -8,9 +8,20 @@ enum L {
            ["pt", "en"].contains(String(forcado.prefix(2)).lowercased()) {
             return String(forcado.prefix(2)).lowercased()
         }
+        // A escolha do dono vence o sistema; sem escolha, o sistema decide.
+        if let salvo = UserDefaults.standard.string(forKey: "idioma"),
+           ["pt", "en"].contains(salvo) {
+            return salvo
+        }
         let sistema = Locale.preferredLanguages.first ?? "en"
         return sistema.hasPrefix("pt") ? "pt" : "en"
     }()
+
+    static func escolher(_ code: String) {
+        guard ["pt", "en"].contains(code) else { return }
+        lang = code
+        UserDefaults.standard.set(code, forKey: "idioma")
+    }
 
     static func t(_ pt: String, _ en: String) -> String { lang == "pt" ? pt : en }
 
@@ -58,6 +69,7 @@ enum L {
     static var claudeConnected: String { t("Ligado ao Claude Code", "Connected to Claude Code") }
     static var claudeConnect: String { t("Ligar ao Claude Code", "Connect to Claude Code") }
     static var refresh: String { t("Atualizar", "Refresh") }
+    static var language: String { t("Idioma", "Language") }
 
     static func modeName(_ m: String) -> String {
         switch m {

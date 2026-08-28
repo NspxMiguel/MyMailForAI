@@ -141,7 +141,10 @@ def _executar(conta: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
                 with imapc.connect(conta) as conn:
                     guardado = imapc.special_folder(conn, "sent") or "Sent"
                     imapc.append(conn, guardado, bytes(msg), flags="\\Seen")
-            except imapc.MailError:
+            except Exception:
+                # Guardar a cópia em Enviados é conforto; o envio já aconteceu.
+                # Deixar essa falha subir marcaria como "falhou" um e-mail que
+                # saiu — e o agente mandaria de novo.
                 guardado = None
         return {"status": "sent", "to": enderecos, "message_id": msg.get("Message-ID"),
                 "saved_to": guardado,

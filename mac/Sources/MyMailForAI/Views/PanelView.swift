@@ -34,6 +34,7 @@ struct PanelView: View {
             rodape
         }
         .frame(width: 380)
+        .id(store.langTick)
         .onAppear { store.refresh() }
     }
 
@@ -204,6 +205,12 @@ struct PanelView: View {
             }
             Spacer()
             Menu {
+                Picker(L.language, selection: Binding(
+                    get: { L.lang }, set: { store.setLanguage($0) })) {
+                    Text("Português").tag("pt")
+                    Text("English").tag("en")
+                }
+                Divider()
                 Button(L.uninstall) { confirmarDesinstalar() }
                 Divider()
                 Button(L.quit) { NSApp.terminate(nil) }
