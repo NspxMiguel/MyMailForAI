@@ -61,6 +61,14 @@ def cmd_login(args) -> int:
         return _fail(str(erro), args.json)
 
     preset = providers.PROVIDERS[conta["provider"]]
+    if args.detect:
+        return _out({"address": endereco, "provider": conta["provider"],
+                     "label": preset["label"], "password_url": preset.get("password_url", ""),
+                     "password_hint": preset["password_hint"],
+                     "username_hint": preset["username_hint"],
+                     "username": conta["username"],
+                     "imap": conta["imap"], "smtp": conta["smtp"]}, args.json,
+                    f"{preset['label']} — {preset.get('password_url', '')}")
     if not args.json:
         print(T(f"Provedor: {preset['label']}", f"Provider: {preset['label']}"))
         print(f"  IMAP  {conta['imap']['host']}:{conta['imap']['port']}")
@@ -553,6 +561,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help=T("não abrir a página do provedor", "do not open the provider page"))
     s.add_argument("--no-verify", action="store_true")
     s.add_argument("--default", action="store_true")
+    s.add_argument("--detect", action="store_true",
+                   help=T("só descobrir o provedor e a página da senha",
+                          "only detect the provider and the app-password page"))
 
     s = add("logout", cmd_logout, T("sair de uma conta", "log out of an account"), conta=False)
     s.add_argument("address", nargs="?")
