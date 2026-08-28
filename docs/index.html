@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyMailForAI — Your mailbox with full AI access</title>
+  <meta name="description" content="Your own mailbox, with full access for your AI agent, and the brake in the menu bar.">
+  <meta property="og:title" content="MyMailForAI — Your mailbox with full AI access">
+  <meta property="og:description" content="Your own mailbox, with full access for your AI agent, and the brake in the menu bar.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="./">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314171d'/%3E%3Cpath d='M7 10h18v12H7z' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3Cpath d='M7 10l9 7.5L25 10' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="./" class="brand">MyMailForAI</a>
+      <button id="lang-btn" class="lang-toggle" onclick="window.i18nToggle()"></button>
+    </header>
+
+    <!-- (1) Titulo e frase explicativa -->
+    <section class="hero">
+      <h1 data-i18n="hero_title">MyMailForAI</h1>
+      <p data-i18n="hero_subtitle">Your own mailbox, with full access for your AI agent, and the brake in the menu bar.</p>
+    </section>
+
+    <!-- (2) Bloco de instalacao -->
+    <section class="installation">
+      <h2 data-i18n="install_title">Installation</h2>
+      <p data-i18n="install_intro">Install via Homebrew tap and authenticate your email account:</p>
+      <div class="code-block">
+        <code><span class="prompt">$ </span><span class="cmd">brew install --cask nspxmiguel/tap/mymailforai</span></code>
+        <code><span class="prompt">$ </span><span class="cmd">mymailforai login voce@gmail.com</span></code>
+      </div>
+    </section>
+
+    <!-- (3) Tabela comparativa MailForAI x MyMailForAI do CONTRATO -->
+    <section class="comparison">
+      <h2 data-i18n="comparison_title">MailForAI vs MyMailForAI</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="th_feature">Feature</th>
+              <th data-i18n="th_mailforai">MailForAI</th>
+              <th data-i18n="th_mymailforai">MyMailForAI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-i18n="row_mailbox_label">Mailbox</td>
+              <td data-i18n="row_mailbox_mfa">Agent's mailbox (claude@nspx.dev)</td>
+              <td data-i18n="row_mailbox_mymfa">Your own (Gmail, iCloud, etc.)</td>
+            </tr>
+            <tr>
+              <td data-i18n="row_scope_label">Scope</td>
+              <td data-i18n="row_scope_mfa">Send to allowlist only</td>
+              <td data-i18n="row_scope_mymfa">Read all, write, move, archive</td>
+            </tr>
+            <tr>
+              <td data-i18n="row_interface_label">Interface</td>
+              <td data-i18n="row_interface_mfa">Windowed app with tabs &amp; assistant</td>
+              <td data-i18n="row_interface_mymfa">Menu bar item only</td>
+            </tr>
+            <tr>
+              <td data-i18n="row_brake_label">Brake</td>
+              <td data-i18n="row_brake_mfa">Allowlist + daily limit</td>
+              <td data-i18n="row_brake_mymfa">Mode (automatic / ask / read-only)</td>
+            </tr>
+            <tr>
+              <td data-i18n="row_accounts_label">Accounts</td>
+              <td data-i18n="row_accounts_mfa">One</td>
+              <td data-i18n="row_accounts_mymfa">As many as you want, with logout</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- (4) Os tres modos explicados em uma frase cada -->
+    <section class="modes">
+      <h2 data-i18n="modes_title">Execution Modes</h2>
+      <div class="modes-list">
+        <div class="mode-item">
+          <div class="mode-title" data-i18n="mode_auto_title">auto (Automatic)</div>
+          <p class="mode-desc" data-i18n="mode_auto_desc">Read access is fully enabled, and all email sending or writing actions execute immediately.</p>
+        </div>
+        <div class="mode-item">
+          <div class="mode-title" data-i18n="mode_ask_title">ask (Ask Permission — Default)</div>
+          <p class="mode-desc" data-i18n="mode_ask_desc">Read access is fully enabled; write actions enter the queue and await approval in the menu bar.</p>
+        </div>
+        <div class="mode-item">
+          <div class="mode-title" data-i18n="mode_read_title">read (Read-Only)</div>
+          <p class="mode-desc" data-i18n="mode_read_desc">Read access is fully enabled, but any write or modification attempt is rejected with a clear explanation.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- (5) O que o painel da barra de menus mostra -->
+    <section class="menubar">
+      <h2 data-i18n="menubar_title">Menu Bar Panel</h2>
+      <p data-i18n="menubar_intro">The native macOS menu bar app gives you continuous visibility and instant control:</p>
+      <ul class="feature-list">
+        <li><strong data-i18n="menubar_item_1_title">Account overview:</strong> <span data-i18n="menubar_item_1_desc">List of connected accounts, active execution modes, and unread email counters.</span></li>
+        <li><strong data-i18n="menubar_item_2_title">Pending queue:</strong> <span data-i18n="menubar_item_2_desc">Pending action requests with one-click Confirm or Reject buttons.</span></li>
+        <li><strong data-i18n="menubar_item_3_title">Mode control:</strong> <span data-i18n="menubar_item_3_desc">Quick mode selector per account (automatic, ask, or read-only).</span></li>
+        <li><strong data-i18n="menubar_item_4_title">Account management:</strong> <span data-i18n="menubar_item_4_desc">Add new email accounts, log out, switch display language, or uninstall.</span></li>
+      </ul>
+    </section>
+
+    <!-- (6) Privacidade -->
+    <section class="privacy">
+      <h2 data-i18n="privacy_title">Privacy &amp; Security</h2>
+      <div class="privacy-box">
+        <p data-i18n="privacy_desc">Your app password goes directly into the macOS Keychain. Nothing ever leaves your machine, and there is no server of ours.</p>
+      </div>
+    </section>
+
+    <!-- (7) Lista das ferramentas MCP -->
+    <section class="mcp">
+      <h2 data-i18n="mcp_title">MCP Tools</h2>
+      <p data-i18n="mcp_intro">When launched with <code>mymailforai mcp</code>, the following Model Context Protocol tools are exposed over stdio:</p>
+      <div class="mcp-grid">
+        <div class="mcp-item">
+          <span class="mcp-name">list_accounts</span>
+          <span class="mcp-detail" data-i18n="mcp_list_accounts">List configured accounts, default account, and status.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">mailbox_status</span>
+          <span class="mcp-detail" data-i18n="mcp_mailbox_status">Check inbox summary and unread mail counts.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">list_folders</span>
+          <span class="mcp-detail" data-i18n="mcp_list_folders">List all folders in the mailbox.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">list_inbox</span>
+          <span class="mcp-detail" data-i18n="mcp_list_inbox">List recent messages from the inbox.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">search_email</span>
+          <span class="mcp-detail" data-i18n="mcp_search_email">Search emails by sender, recipient, subject, text, or date.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">read_email</span>
+          <span class="mcp-detail" data-i18n="mcp_read_email">Read complete message content and headers by UID.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">download_attachment</span>
+          <span class="mcp-detail" data-i18n="mcp_download_attachment">Save email attachments on demand to local disk.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">send_email</span>
+          <span class="mcp-detail" data-i18n="mcp_send_email">Send a new email message.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">reply_email</span>
+          <span class="mcp-detail" data-i18n="mcp_reply_email">Reply to an existing email thread.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">forward_email</span>
+          <span class="mcp-detail" data-i18n="mcp_forward_email">Forward an email to specified recipients.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">save_draft</span>
+          <span class="mcp-detail" data-i18n="mcp_save_draft">Save a draft message without sending.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">mark_email</span>
+          <span class="mcp-detail" data-i18n="mcp_mark_email">Mark emails as read, unread, starred, or unstarred.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">move_email</span>
+          <span class="mcp-detail" data-i18n="mcp_move_email">Move messages to a specified folder.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">archive_email</span>
+          <span class="mcp-detail" data-i18n="mcp_archive_email">Move messages to the Archive folder.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">trash_email</span>
+          <span class="mcp-detail" data-i18n="mcp_trash_email">Safely move messages to the Trash folder.</span>
+        </div>
+        <div class="mcp-item">
+          <span class="mcp-name">list_pending</span>
+          <span class="mcp-detail" data-i18n="mcp_list_pending">List actions in the queue waiting for approval.</span>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>MyMailForAI</span>
+    </footer>
+  </div>
+
+  <script src="./i18n.js"></script>
+</body>
+</html>

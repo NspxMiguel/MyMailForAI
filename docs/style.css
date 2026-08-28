@@ -1,0 +1,364 @@
+:root {
+  color-scheme: dark light;
+  --bg-color: #0e1013;
+  --card-bg: #15181e;
+  --card-border: #232730;
+  --text-main: #e6e8ec;
+  --text-muted: #8b949e;
+  --accent: #f59e0b;
+  --accent-muted: rgba(245, 158, 11, 0.12);
+  --code-bg: #181b22;
+  --code-border: #2d333f;
+  --table-header-bg: #181b22;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --max-width: 720px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --accent: #d97706;
+    --accent-muted: rgba(217, 119, 6, 0.08);
+    --code-bg: #f1f5f9;
+    --code-border: #cbd5e1;
+    --table-header-bg: #f1f5f9;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  padding: 2rem 1.25rem 4rem 1.25rem;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+/* Header & Top Bar */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3.5rem;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.lang-toggle {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.lang-toggle:hover {
+  border-color: var(--accent);
+}
+
+/* Hero Section */
+.hero {
+  margin-bottom: 3.5rem;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Section styling */
+section {
+  margin-bottom: 3.5rem;
+}
+
+section h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+}
+
+section p {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* Code & Installation Block */
+.code-block {
+  background-color: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+.code-block code {
+  display: block;
+  color: var(--text-main);
+  white-space: pre;
+}
+
+.code-block .prompt {
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.code-block .cmd {
+  color: var(--accent);
+}
+
+/* Comparison Table */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.925rem;
+}
+
+th, td {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+th {
+  background-color: var(--table-header-bg);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+td:first-child {
+  font-weight: 600;
+  color: var(--text-main);
+  width: 22%;
+}
+
+td:nth-child(2) {
+  color: var(--text-muted);
+  width: 39%;
+}
+
+td:nth-child(3) {
+  color: var(--text-main);
+  width: 39%;
+  background-color: var(--accent-muted);
+}
+
+/* Modes List */
+.modes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mode-item {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+}
+
+.mode-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+.mode-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+/* Menu Bar Section List */
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.feature-list li {
+  position: relative;
+  padding-left: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.975rem;
+}
+
+.feature-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.feature-list li strong {
+  color: var(--text-main);
+}
+
+/* Privacy Callout */
+.privacy-box {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.privacy-box p {
+  color: var(--text-main);
+  font-size: 0.975rem;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* MCP Tools List */
+.mcp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.mcp-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+}
+
+.mcp-name {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 175px;
+}
+
+.mcp-detail {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Footer */
+footer {
+  margin-top: 5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: var(--accent);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  body {
+    padding: 1.5rem 1rem 3rem 1rem;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+  }
+
+  .hero {
+    margin-bottom: 2.5rem;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+  }
+
+  section {
+    margin-bottom: 2.5rem;
+  }
+
+  .mcp-item {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mcp-name {
+    min-width: auto;
+  }
+}
