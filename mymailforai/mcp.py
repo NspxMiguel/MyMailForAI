@@ -9,7 +9,10 @@ a resposta certa é ele saber que a intenção ficou registrada esperando o dono
 """
 
 import json
+import os
 import sys
+import threading
+import time
 import traceback
 from typing import Any, Dict
 
@@ -267,11 +270,30 @@ def _handle(message: Dict[str, Any]) -> Dict[str, Any]:
             "error": {"code": -32601, "message": f"método não suportado: {method}"}}
 
 
+def _sair_quando_orfao() -> None:
+    """Encerra o servidor quando quem o abriu morre.
+
+    O protocolo diz que o servidor sai no EOF do stdin, e ele sai — mas há
+    cliente que morre sem fechar o cano, e aí o processo fica de pé para sempre.
+    Medido em 28/08/2026: cinco servidores órfãos acumulados de sessões
+    encerradas, cada um segurando conexão IMAP. Sessão aberta na mesma pasta faz
+    o iCloud adiar o EXPUNGE, então arquivar passa a copiar sem remover — o
+    vazamento não era só memória, era e-mail que não saía da caixa.
+    """
+    inicial = os.getppid()
+    while True:
+        time.sleep(5)
+        atual = os.getppid()
+        if atual != inicial or atual == 1:
+            os._exit(0)
+
+
 def serve() -> int:
     try:
         set_language(acc.get_lang())
     except Exception:
         pass
+    threading.Thread(target=_sair_quando_orfao, daemon=True).start()
     for linha in sys.stdin:
         linha = linha.strip()
         if not linha:
