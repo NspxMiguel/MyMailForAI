@@ -27,6 +27,52 @@ def _conta(address: Optional[str]) -> Dict[str, Any]:
     return acc.get(address)
 
 
+# Nestas pastas quem identifica a mensagem é o remetente, não o destinatário:
+# filtrar os Enviados por "para quem veio" esconderia tudo que ele mandou.
+_PASTAS_DE_SAIDA = ("sent", "drafts")
+
+
+def _escopo(conta: Dict[str, Any], folder: str) -> Dict[str, Any]:
+    """Os critérios de busca que prendem a leitura ao escopo da conta."""
+    escopo = conta.get("scope") or []
+    if not escopo:
+        return {}
+    campo = "FROM" if _papel_da_pasta(conta, folder) in _PASTAS_DE_SAIDA else "TO"
+    return {"recipients": escopo, "recipients_field": campo}
+
+
+def _papel_da_pasta(conta: Dict[str, Any], folder: str) -> str:
+    baixo = (folder or "").lower()
+    if "sent" in baixo or "enviad" in baixo:
+        return "sent"
+    if "draft" in baixo or "rascunho" in baixo:
+        return "drafts"
+    return ""
+
+
+def _dentro_do_escopo(conta: Dict[str, Any], mensagem: Dict[str, Any], folder: str) -> bool:
+    escopo = {e.lower() for e in (conta.get("scope") or [])}
+    if not escopo:
+        return True
+    if _papel_da_pasta(conta, folder) in _PASTAS_DE_SAIDA:
+        campos = (mensagem.get("from"),)
+    else:
+        campos = (mensagem.get("to"), mensagem.get("cc"), mensagem.get("delivered_to"))
+    texto = " ".join(c or "" for c in campos).lower()
+    return any(endereco in texto for endereco in escopo)
+
+
+def _fora_do_escopo(conta: Dict[str, Any]) -> ActionError:
+    escopo = ", ".join(conta.get("scope") or [])
+    return ActionError(T(
+        f"essa mensagem não veio para {escopo}, e o escopo desta conta está preso "
+        f"nesse endereço. É correspondência do dono. Se ele pediu explicitamente, "
+        f"abra com: mymailforai scope --all",
+        f"that message was not addressed to {escopo}, and this account's scope is "
+        f"limited to it. It is the owner's own mail. If they explicitly asked, "
+        f"widen it with: mymailforai scope --all"))
+
+
 def _resumo_destino(payload: Dict[str, Any]) -> str:
     destinos = ", ".join(payload.get("to") or []) or "?"
     return f"→ {destinos} · {payload.get('subject') or '(sem assunto)'}"
@@ -74,6 +120,7 @@ def list_accounts(with_unread: bool = False) -> Dict[str, Any]:
             "unread": nao_lidos,
             "pending": len(approvals.pending(endereco)),
             "identities": conta.get("identities") or [],
+            "scope": conta.get("scope") or [],
             "send_as": conta.get("send_as") or endereco,
             "sent_today": approvals.sent_today(endereco),
             "daily_limit": int(conta.get("daily_limit", 50)),
@@ -92,13 +139,15 @@ def list_inbox(account: Optional[str] = None, folder: str = "INBOX",
                limit: int = 20, unread: bool = False) -> List[Dict[str, Any]]:
     conta = _conta(account)
     with imapc.connect(conta) as conn:
-        uids = imapc.search(conn, folder=folder, limit=limit, unread=unread)
+        uids = imapc.search(conn, folder=folder, limit=limit, unread=unread,
+                            **_escopo(conta, folder))
         return imapc.summaries(conn, uids, folder=folder)
 
 
 def search_email(account: Optional[str] = None, folder: str = "INBOX", limit: int = 25,
                  **criterios) -> List[Dict[str, Any]]:
     conta = _conta(account)
+    criterios.update(_escopo(conta, folder))
     with imapc.connect(conta) as conn:
         uids = imapc.search(conn, folder=folder, limit=limit, **criterios)
         return imapc.summaries(conn, uids, folder=folder)
@@ -108,13 +157,23 @@ def read_email(uid: int, account: Optional[str] = None, folder: str = "INBOX",
                mark_read: bool = False) -> Dict[str, Any]:
     conta = _conta(account)
     with imapc.connect(conta) as conn:
-        return imapc.fetch(conn, int(uid), folder=folder, mark_read=mark_read)
+        # Conferir depois de buscar, não só na busca: o UID pode ter vindo de
+        # qualquer lugar, inclusive de um palpite.
+        mensagem = imapc.fetch(conn, int(uid), folder=folder, mark_read=False)
+        if not _dentro_do_escopo(conta, mensagem, folder):
+            raise _fora_do_escopo(conta)
+        if mark_read:
+            imapc.store_flags(conn, int(uid), folder, add=["\\Seen"])
+            mensagem["unread"] = False
+        return mensagem
 
 
 def download_attachment(uid: int, filename: str, account: Optional[str] = None,
                         folder: str = "INBOX", dest: Optional[str] = None) -> Dict[str, Any]:
     conta = _conta(account)
     with imapc.connect(conta) as conn:
+        if not _dentro_do_escopo(conta, imapc.fetch(conn, int(uid), folder=folder), folder):
+            raise _fora_do_escopo(conta)
         nome, dados = imapc.fetch_attachment(conn, int(uid), filename, folder=folder)
     destino = os.path.expanduser(dest) if dest else str(ensure_attach_dir() / f"{uid}-{nome}")
     os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)

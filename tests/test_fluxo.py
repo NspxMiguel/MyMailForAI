@@ -197,6 +197,36 @@ js("trash", str(sobrou))
 ok("manda para a lixeira", len(dublê.PASTAS["Trash"]["msgs"]) == 1)
 ok("a entrada ficou vazia", js("inbox", "-n", "10") == [])
 
+# ----------------------------------------------------------------- escopo
+
+print("\nescopo")
+dublê.semear("banco@fora.dev", "pessoal@mymailforai.local",
+             "extrato da conta", "isto e correspondencia do dono, nao do agente")
+ok("a conta nasce presa no endereço dela", js("scope")["scope"] == [CONTA], str(js("scope")))
+visivel = js("inbox", "-n", "20")
+ok("a entrada só mostra o que veio para a conta",
+   all(CONTA in ((m.get("to") or "") + (m.get("cc") or "")).lower() for m in visivel),
+   str([m.get("to") for m in visivel]))
+ok("a mensagem pessoal do dono não aparece",
+   not any("extrato da conta" in (m.get("subject") or "") for m in visivel),
+   str([m.get("subject") for m in visivel]))
+ok("a busca também respeita o escopo",
+   js("search", "--subject", "extrato") == [], str(js("search", "--subject", "extrato")))
+
+# o UID existe; o que barra é o escopo, e barra mesmo tendo o número na mão
+todos = js("scope", "--all")
+uid_pessoal = next(m["uid"] for m in js("inbox", "-n", "20")
+                   if "extrato da conta" in (m.get("subject") or ""))
+js("scope", "--only", CONTA)
+codigo, _, erro = rodar("read", str(uid_pessoal), "--json", esperar_sucesso=False)
+ok("ler por UID fora do escopo é recusado", codigo != 0 and "scope" in erro, erro[:140])
+
+js("scope", "--all")
+ok("--all abre a caixa inteira quando o dono pede",
+   any("extrato da conta" in (m.get("subject") or "") for m in js("inbox", "-n", "20")))
+js("scope", "--only", CONTA)
+ok("--only fecha de novo", js("scope")["scope"] == [CONTA])
+
 # ------------------------------------------------------------ identidades
 
 print("\nidentidades")

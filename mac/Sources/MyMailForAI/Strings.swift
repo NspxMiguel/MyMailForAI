@@ -71,6 +71,18 @@ enum L {
     static var refresh: String { t("Atualizar", "Refresh") }
     static var language: String { t("Idioma", "Language") }
     static var sendAs: String { t("Enviar como", "Send as") }
+    static var scopeTitle: String { t("O agente vê", "The agent sees") }
+    static var scopeWhole: String { t("a caixa inteira", "the whole mailbox") }
+    static var scopeOpen: String { t("Abrir a caixa inteira", "Open the whole mailbox") }
+    static var scopeClose: String { t("Fechar no endereço da conta", "Limit to the account address") }
+    static var scopeHelp: String {
+        t("O resto da caixa é sua correspondência, e ele não vê.",
+          "The rest of the mailbox is your own mail, and it does not see it.")
+    }
+    static var scopeOpenWarn: String {
+        t("A caixa inteira está aberta para o agente.",
+          "The whole mailbox is open to the agent.")
+    }
     static var rescan: String { t("Procurar de novo", "Scan again") }
     static var sameMailbox: String {
         t("Todos caem na mesma entrada — não precisa conectar cada um.",

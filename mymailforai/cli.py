@@ -138,6 +138,10 @@ def cmd_login(args) -> int:
             print(f"     {item['address']:<38} {prova_txt}")
         print(T("     escolha por qual mandar:  mymailforai identities --send-as <endereço>",
                 "     pick which one to send from:  mymailforai identities --send-as <address>"))
+    print(T(f"  O agente vê só o que vem para {endereco}. O resto da caixa é seu."
+            "\n  Abrir tudo:  mymailforai scope --all",
+            f"  The agent only sees what comes to {endereco}. The rest is yours."
+            "\n  Open it all:  mymailforai scope --all"))
     print(T(f"  Modo: {_modo_legivel(conta['mode'])} — troque na barra de menus.",
             f"  Mode: {_modo_legivel(conta['mode'])} — change it in the menu bar."))
     return 0
@@ -441,6 +445,49 @@ def cmd_history(args) -> int:
     return 0
 
 
+def cmd_scope(args) -> int:
+    """O que o agente enxerga desta caixa. Nasce preso no endereço da conta."""
+    try:
+        conta = acc.get(args.account)
+        atual = list(conta.get("scope") or [])
+        if args.all:
+            novo = []
+        elif args.only:
+            novo = [args.only]
+        elif args.add or args.remove:
+            novo = list(atual)
+            for endereco in args.add or []:
+                if endereco.lower() not in novo:
+                    novo.append(endereco.lower())
+            for endereco in args.remove or []:
+                if endereco.lower() in novo:
+                    novo.remove(endereco.lower())
+        else:
+            novo = None
+        if novo is not None:
+            r = acc.set_scope(novo, args.account)
+            approvals.log(r["address"], "scope", "done", ", ".join(r["scope"]) or "caixa inteira")
+            atual = r["scope"]
+    except acc.AccountError as erro:
+        return _fail(str(erro), args.json)
+    if args.json:
+        return _out({"address": conta["address"], "scope": atual}, True)
+    if atual:
+        print(T("O agente enxerga só o que veio para:", "The agent only sees what came to:"))
+        for endereco in atual:
+            print(f"  {endereco}")
+        print(T("\nO resto da caixa é correspondência sua, e ele não vê."
+                "\nAbrir tudo:  mymailforai scope --all",
+                "\nThe rest of the mailbox is your own mail, and it does not see it."
+                "\nOpen it all:  mymailforai scope --all"))
+    else:
+        print(T("A CAIXA INTEIRA está aberta para o agente.",
+                "THE WHOLE MAILBOX is open to the agent."))
+        print(T(f"Fechar de novo:  mymailforai scope --only {conta['address']}",
+                f"Close it again:  mymailforai scope --only {conta['address']}"))
+    return 0
+
+
 def cmd_identities(args) -> int:
     """Os outros endereços da mesma caixa — o que ele chamou de 'outros e-mails'."""
     try:
@@ -643,6 +690,16 @@ def build_parser() -> argparse.ArgumentParser:
                    help=T("em 'ask', pedir também para mover/arquivar/lixeira",
                           "in 'ask', also ask for move/archive/trash"))
     s.add_argument("--no-strict", dest="strict", action="store_false")
+
+    s = add("scope", cmd_scope,
+            T("o que o agente enxerga desta caixa", "what the agent sees of this mailbox"))
+    s.add_argument("--add", action="append", metavar="ENDERECO")
+    s.add_argument("--remove", action="append", metavar="ENDERECO")
+    s.add_argument("--only", metavar="ENDERECO",
+                   help=T("prender em um endereço só", "limit to a single address"))
+    s.add_argument("--all", action="store_true",
+                   help=T("abrir a caixa inteira — só se ele pedir",
+                          "open the whole mailbox — only if they ask"))
 
     s = add("identities", cmd_identities,
             T("os outros endereços da mesma caixa", "the other addresses of the same mailbox"))

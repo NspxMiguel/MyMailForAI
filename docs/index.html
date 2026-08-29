@@ -100,6 +100,17 @@
       <p data-i18n="ident_reply">Replies pick the identity on their own: a message that arrived for you@yourdomain.com is answered from you@yourdomain.com, not from whichever address you happened to log in with.</p>
     </section>
 
+    <!-- O que o agente enxerga -->
+    <section class="scope">
+      <h2 data-i18n="scope_title">What the agent sees</h2>
+      <p data-i18n="scope_intro">A mailbox that receives on several addresses is also, unavoidably, one IMAP connection. Opening "the agent's mailbox" and opening your personal mail are the same connection, so without a limit the very first listing hands the agent fifteen hundred messages that were never meant for it. Every account is created scoped to the address you connected with.</p>
+      <div class="code-block">
+        <code><span class="prompt">$ </span><span class="cmd">mymailforai scope</span></code>
+        <code><span class="prompt">$ </span><span class="cmd">mymailforai scope --all</span></code>
+      </div>
+      <p data-i18n="scope_both">The limit holds on both sides: the server-side search is filtered before results exist, and reading by UID checks again — a UID can come from anywhere, including a guess.</p>
+    </section>
+
     <section class="modes">
       <h2 data-i18n="modes_title">Execution Modes</h2>
       <div class="modes-list">

@@ -33,6 +33,7 @@ struct Account: Codable, Identifiable, Equatable {
     var isDefault: Bool
     var identities: [Identity]
     var sendAs: String
+    var scope: [String]
 
     var id: String { address }
 
@@ -47,6 +48,7 @@ struct Account: Codable, Identifiable, Equatable {
         case isDefault = "is_default"
         case identities
         case sendAs = "send_as"
+        case scope
     }
 
     /// Decodificação tolerante: uma config gravada por uma versão anterior não
@@ -66,6 +68,7 @@ struct Account: Codable, Identifiable, Equatable {
         isDefault = try c.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
         identities = try c.decodeIfPresent([Identity].self, forKey: .identities) ?? []
         sendAs = try c.decodeIfPresent(String.self, forKey: .sendAs) ?? address
+        scope = try c.decodeIfPresent([String].self, forKey: .scope) ?? []
     }
 }
 

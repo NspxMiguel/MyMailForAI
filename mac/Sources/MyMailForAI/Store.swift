@@ -211,6 +211,15 @@ final class Store: ObservableObject {
 
     func setDefault(_ account: String) { agir(["default", account, "--json"]) }
 
+    /// Abrir a caixa inteira é decisão do dono, e some do painel enquanto não é.
+    func setScopeAll(_ tudo: Bool, account: String) {
+        if let i = accounts.firstIndex(where: { $0.address == account }) {
+            accounts[i].scope = tudo ? [] : [account]
+        }
+        agir(tudo ? ["scope", "--all", "--account", account, "--json"]
+                  : ["scope", "--only", account, "--account", account, "--json"])
+    }
+
     func setSendAs(_ address: String, account: String) {
         if let i = accounts.firstIndex(where: { $0.address == account }) {
             accounts[i].sendAs = address

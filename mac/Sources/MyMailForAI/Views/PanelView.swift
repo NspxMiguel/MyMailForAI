@@ -191,6 +191,27 @@ struct PanelView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 4) {
+                                Image(systemName: conta.scope.isEmpty
+                                      ? "eye" : "eye.slash")
+                                    .font(.system(size: 9))
+                                Text("\(L.scopeTitle): "
+                                     + (conta.scope.isEmpty ? L.scopeWhole
+                                        : conta.scope.joined(separator: ", ")))
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundStyle(conta.scope.isEmpty ? .orange : .secondary)
+                            Text(conta.scope.isEmpty ? L.scopeOpenWarn : L.scopeHelp)
+                                .font(.system(size: 9)).foregroundStyle(.tertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button(conta.scope.isEmpty ? L.scopeClose : L.scopeOpen) {
+                                store.setScopeAll(conta.scope.isEmpty ? false : true,
+                                                  account: conta.address)
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 10))
+                        }
                         if conta.mode == "ask" {
                             Toggle(L.strict, isOn: Binding(
                                 get: { conta.askCoversMailbox },

@@ -69,6 +69,7 @@ def get(address: Optional[str] = None) -> Dict[str, Any]:
     conta = dict(contas[address])
     conta.setdefault("address", address)
     conta.setdefault("mode", DEFAULT_MODE)
+    conta.setdefault("scope", [address.lower()])
     conta.setdefault("daily_limit", DEFAULT_DAILY_LIMIT)
     conta.setdefault("max_attachment_mb", DEFAULT_MAX_ATTACH_MB)
     conta.setdefault("username", address)
@@ -113,6 +114,11 @@ def build(address: str, provider: Optional[str] = None, username: Optional[str] 
         "imap": imap,
         "smtp": smtp,
         "mode": DEFAULT_MODE,
+        # O agente enxerga só o que veio para o endereço com que se conectou.
+        # Uma caixa de iCloud é compartilhada entre vários endereços, e o resto
+        # é correspondência pessoal do dono — abrir isso é escolha dele, por
+        # pedido explícito, não o padrão de instalação.
+        "scope": [address.lower()],
         "daily_limit": DEFAULT_DAILY_LIMIT,
         "max_attachment_mb": DEFAULT_MAX_ATTACH_MB,
         "added_at": datetime.datetime.now(datetime.timezone.utc)
@@ -146,6 +152,17 @@ def set_default(address: str) -> None:
         raise AccountError(f"conta '{address}' não está conectada")
     cfg["default_account"] = address
     save(cfg)
+
+
+def set_scope(scope: Optional[List[str]], address: Optional[str] = None) -> Dict[str, Any]:
+    """Lista vazia (ou None) = a caixa inteira. Só por pedido explícito dele."""
+    cfg = load()
+    address = address or cfg.get("default_account")
+    if not address or address not in cfg.get("accounts", {}):
+        raise AccountError("nenhuma conta conectada")
+    cfg["accounts"][address]["scope"] = [e.strip().lower() for e in (scope or []) if e.strip()]
+    save(cfg)
+    return {"address": address, "scope": cfg["accounts"][address]["scope"]}
 
 
 def set_mode(mode: str, address: Optional[str] = None) -> str:

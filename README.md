@@ -59,6 +59,28 @@ Replies pick the identity on their own: a message that arrived for
 `you@yourdomain.com` is answered from `you@yourdomain.com`, not from whichever
 address you happened to log in with.
 
+## What the agent sees
+
+A mailbox that receives on several addresses is also, unavoidably, one IMAP
+connection. Opening "the agent's mailbox" and opening **your personal mail** are
+the same connection, so without a limit the very first `list_inbox` hands the
+agent fifteen hundred messages that were never meant for it.
+
+Every account is therefore created **scoped to the address you connected with**.
+The agent sees what came to that address, and nothing else:
+
+```bash
+mymailforai scope                          # what it sees today
+mymailforai scope --add other@you.com
+mymailforai scope --all                    # the whole mailbox, when you decide
+mymailforai scope --only agent@you.com     # close it again
+```
+
+The limit holds on both sides: the server-side search is filtered before results
+exist, and reading by UID checks again — a UID can come from anywhere, including
+a guess. The panel shows the current scope and says so in orange when the whole
+mailbox is open.
+
 ## The brake
 
 Every account has a mode, the same three a coding agent has:

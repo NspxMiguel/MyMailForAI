@@ -212,11 +212,30 @@ def unread_count(conn, folder: str = "INBOX") -> int:
 
 # --------------------------------------------------------------------- busca
 
+def _ou(campo: str, valores: List[str]) -> List[str]:
+    """`OR TO "a" OR TO "b" TO "c"` — o OR do IMAP é prefixo e binário.
+
+    Escrever `TO a TO b` daria E, não OU: a busca voltaria vazia, e a caixa
+    pareceria não ter nada em vez de estar mal perguntada.
+    """
+    aspas = ['"%s"' % v.replace('\\', '\\\\').replace('"', '\\"') for v in valores]
+    if not aspas:
+        return []
+    if len(aspas) == 1:
+        return [campo, aspas[0]]
+    return ["OR", campo, aspas[0]] + _ou(campo, valores[1:])
+
+
 def _criteria(text: Optional[str] = None, sender: Optional[str] = None,
               to: Optional[str] = None, subject: Optional[str] = None,
               since: Optional[str] = None, before: Optional[str] = None,
-              unread: bool = False, flagged: bool = False) -> List[str]:
+              unread: bool = False, flagged: bool = False,
+              recipients: Optional[List[str]] = None,
+              recipients_field: str = "TO") -> List[str]:
     crit: List[str] = []
+    # A trava de escopo vem primeiro: é ela que decide o que sequer aparece.
+    if recipients:
+        crit += _ou(recipients_field, list(recipients))
     if unread:
         crit.append("UNSEEN")
     if flagged:
@@ -291,7 +310,7 @@ def summaries(conn, uids: Iterable[int], folder: str = "INBOX") -> List[Dict[str
     status, dados = conn.uid(
         "FETCH", conjunto,
         "(UID FLAGS RFC822.SIZE BODY.PEEK[HEADER.FIELDS "
-        "(FROM TO CC SUBJECT DATE MESSAGE-ID)])")
+        "(FROM TO CC SUBJECT DATE MESSAGE-ID DELIVERED-TO X-ORIGINAL-TO)])")
     if status != "OK":
         raise MailError(T("não consegui ler os cabeçalhos", "could not read the headers"))
     por_uid: Dict[int, Dict[str, Any]] = {}
@@ -316,6 +335,7 @@ def summaries(conn, uids: Iterable[int], folder: str = "INBOX") -> List[Dict[str
             "subject": _decode_header(cab.get("Subject")),
             "date": _decode_header(cab.get("Date")),
             "message_id": (cab.get("Message-ID") or "").strip(),
+            "delivered_to": _decode_header(cab.get("Delivered-To") or cab.get("X-Original-To")),
             "unread": "\\Seen" not in flags_txt,
             "flagged": "\\Flagged" in flags_txt,
             "size": int(tamanho.group(1)) if tamanho else None,

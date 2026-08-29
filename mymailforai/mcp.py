@@ -25,10 +25,10 @@ _UID = {"type": "integer", "description": "o UID que a listagem devolveu"}
 TOOLS = [
     {"name": "mailbox_status",
      "description": "Onde as coisas estão antes de agir: contas conectadas, o modo de cada "
-                    "uma (automatic / ask / read-only), quantos itens esperam confirmação e "
-                    "quanto do teto diário de envio já foi usado. Consulte antes de escrever "
-                    "a primeira mensagem — é o que diz se um envio vai sair na hora ou entrar "
-                    "na fila do dono.",
+                    "uma (automatic / ask / read-only), o ESCOPO (quais endereços desta caixa "
+                    "você pode ler), quantos itens esperam confirmação e quanto do teto diário "
+                    "de envio já foi usado. Consulte antes de escrever a primeira mensagem — é "
+                    "o que diz se um envio vai sair na hora ou entrar na fila do dono.",
      "inputSchema": {"type": "object", "properties": {
          "with_unread": {"type": "boolean", "default": False,
                          "description": "também consultar o servidor pelo número de não lidos"}}}},
@@ -55,7 +55,10 @@ TOOLS = [
 
     {"name": "list_inbox",
      "description": "As mensagens mais recentes de uma pasta: UID, remetente, assunto, data "
-                    "e se está sem ler. Não marca nada como lido.",
+                    "e se está sem ler. Não marca nada como lido. A lista vem presa ao escopo "
+                    "da conta: uma caixa costuma ser compartilhada entre vários endereços do "
+                    "dono, e você só enxerga o que veio para o seu. Não é falha — o resto é "
+                    "correspondência dele.",
      "inputSchema": {"type": "object", "properties": {
          "limit": {"type": "integer", "default": 20}, "folder": _PASTA,
          "unread_only": {"type": "boolean", "default": False}, "account": _CONTA}}},
@@ -73,7 +76,9 @@ TOOLS = [
 
     {"name": "read_email",
      "description": "O corpo inteiro de uma mensagem, mais a lista de anexos. Por padrão NÃO "
-                    "marca como lida — passe mark_read só quando o dono souber que você leu.",
+                    "marca como lida — passe mark_read só quando o dono souber que você leu. "
+                    "Um UID fora do escopo da conta é recusado, mesmo que você tenha o número: "
+                    "peça ao dono em vez de tentar outro UID.",
      "inputSchema": {"type": "object", "properties": {
          "uid": _UID, "folder": _PASTA, "mark_read": {"type": "boolean", "default": False},
          "account": _CONTA}, "required": ["uid"]}},
