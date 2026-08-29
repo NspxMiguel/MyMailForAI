@@ -82,10 +82,23 @@ struct QueueItem: Codable, Identifiable, Equatable {
     var createdAt: String
     var summary: String
     var detail: String?
+    var from: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, account, action, summary, detail
+        case id, account, action, summary, detail, from
         case createdAt = "created_at"
+    }
+
+    /// Item enfileirado por uma versão anterior não tem `from`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        account = try c.decode(String.self, forKey: .account)
+        action = try c.decodeIfPresent(String.self, forKey: .action) ?? "send"
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+        summary = try c.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        detail = try c.decodeIfPresent(String.self, forKey: .detail)
+        from = try c.decodeIfPresent(String.self, forKey: .from)
     }
 }
 

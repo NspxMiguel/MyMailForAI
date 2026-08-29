@@ -29,12 +29,7 @@ def _conta(address: Optional[str]) -> Dict[str, Any]:
 
 def _resumo_destino(payload: Dict[str, Any]) -> str:
     destinos = ", ".join(payload.get("to") or []) or "?"
-    resumo = f"→ {destinos} · {payload.get('subject') or '(sem assunto)'}"
-    # o remetente entra no resumo só quando não é o de sempre: ele precisa ver,
-    # antes de confirmar, se a mensagem vai sair por outro endereço dele
-    if payload.get("from"):
-        resumo = f"{payload['from']} {resumo}"
-    return resumo
+    return f"→ {destinos} · {payload.get('subject') or '(sem assunto)'}"
 
 
 def _remetente(conta: Dict[str, Any], pedido: Optional[str]) -> Optional[str]:
@@ -137,7 +132,8 @@ def _passar_pelo_freio(conta: Dict[str, Any], action: str, payload: Dict[str, An
         approvals.log(conta["address"], action, "refused", summary, detail=motivo)
         raise ActionError(motivo)
     if decisao == gate.QUEUE:
-        item = approvals.enqueue(conta["address"], action, summary, detail, payload, agent=agent)
+        item = approvals.enqueue(conta["address"], action, summary, detail, payload,
+                                 agent=agent, sender=payload.get("from"))
         return {"status": "queued", "id": item["id"], "summary": summary,
                 "message": T(f"na fila, id {item['id']} — confirme na barra de menus",
                              f"queued as {item['id']} — confirm it in the menu bar")}

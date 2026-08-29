@@ -31,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // Fixa antes de aparecer. Sem isto o popover nasce do tamanho do painel
         // vazio, cresce quando os dados chegam, e o AppKit não reposiciona o que
         // já está na tela: perto do relógio, metade dele fica fora do monitor.
-        popover.contentSize = NSSize(width: 380, height: 340)
+        popover.contentSize = NSSize(width: 380, height: 540)
         popover.delegate = self
         popover.contentViewController = NSHostingController(
             rootView: PanelView(store: Store.shared))

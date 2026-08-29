@@ -39,7 +39,8 @@ def _save(fila: Dict[str, Any]) -> None:
 
 
 def enqueue(account: str, action: str, summary: str, detail: str,
-            payload: Dict[str, Any], agent: str = "claude") -> Dict[str, Any]:
+            payload: Dict[str, Any], agent: str = "claude",
+            sender: Optional[str] = None) -> Dict[str, Any]:
     fila = _load()
     item = {
         "id": secrets.token_hex(3),
@@ -47,6 +48,8 @@ def enqueue(account: str, action: str, summary: str, detail: str,
         "action": action,
         "created_at": agora(),
         "agent": agent,
+        # por qual endereço da caixa a mensagem sai — ele confirma olhando isto
+        "from": sender or account,
         "summary": summary,
         "detail": detail,
         "payload": payload,

@@ -27,13 +27,13 @@ struct PanelView: View {
                     }
                     .padding(12)
                 }
-                .frame(maxHeight: 460)
+                .frame(maxHeight: .infinity)
             }
 
             Divider()
             rodape
         }
-        .frame(width: 380)
+        .frame(width: 380, height: 540)
         .id(store.langTick)
         .onAppear { store.refresh() }
     }
@@ -82,7 +82,9 @@ struct PanelView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     HStack(spacing: 6) {
-                        Text(item.account)
+                        // Por qual endereço a mensagem sai é parte do que ele
+                        // está confirmando, não enfeite.
+                        Text(item.from ?? item.account)
                             .font(.system(size: 9)).foregroundStyle(.tertiary)
                         Spacer()
                         Button(L.reject) { store.reject(item.id) }
