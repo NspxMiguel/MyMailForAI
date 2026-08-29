@@ -130,6 +130,8 @@ section p {
   border-radius: 8px;
   padding: 1.25rem;
   font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   font-size: 0.9rem;
   line-height: 1.7;
   overflow-x: auto;
@@ -217,6 +219,8 @@ td:nth-child(3) {
 
 .mode-title {
   font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--accent);
@@ -294,6 +298,8 @@ td:nth-child(3) {
 
 .mcp-name {
   font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--accent);
