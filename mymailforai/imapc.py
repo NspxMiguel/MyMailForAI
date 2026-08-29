@@ -478,6 +478,21 @@ def move(conn, uid: int, folder: str, destino: str) -> None:
     if "UIDPLUS" in tem:
         conn.uid("EXPUNGE", str(uid))
 
+    # Conferir que a mensagem saiu, e não só que o servidor respondeu OK.
+    #
+    # O iCloud não anuncia MOVE, então este caminho é sempre COPY + \Deleted +
+    # EXPUNGE. E o EXPUNGE fica pendente enquanto outra sessão tem a mesma pasta
+    # aberta: o COPY acontece, a mensagem continua na origem, e todo mundo diz
+    # "movido". Medido em 28/08/2026 com um agente e um script arquivando quase
+    # ao mesmo tempo — três cópias na pasta Archive e o original ainda na INBOX.
+    estado, dados = conn.uid("SEARCH", "UID", str(uid))
+    if estado == "OK" and dados and dados[0] and dados[0].split():
+        raise MailError(T(
+            f"a cópia foi para '{destino}', mas {uid} continua em '{folder}': "
+            "outra sessão está com a pasta aberta e o servidor adiou a remoção",
+            f"the copy reached '{destino}', but {uid} is still in '{folder}': "
+            "another session has the folder open and the server deferred the removal"))
+
 
 def append(conn, folder: str, bruto: bytes, flags: str = "") -> None:
     import time
