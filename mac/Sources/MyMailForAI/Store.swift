@@ -211,6 +211,18 @@ final class Store: ObservableObject {
 
     func setDefault(_ account: String) { agir(["default", account, "--json"]) }
 
+    func setSendAs(_ address: String, account: String) {
+        if let i = accounts.firstIndex(where: { $0.address == account }) {
+            accounts[i].sendAs = address
+        }
+        agir(["identities", "--send-as", address, "--account", account, "--json"])
+    }
+
+    /// Varrer a caixa custa uma conexão IMAP e alguns segundos: só quando pedem.
+    func rescanIdentities(_ account: String) {
+        agir(["identities", "--scan", "--account", account, "--json"])
+    }
+
     func setLanguage(_ code: String) {
         L.escolher(code)
         langTick += 1

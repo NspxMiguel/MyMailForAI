@@ -79,6 +79,27 @@
     </section>
 
     <!-- (4) Os tres modos explicados em uma frase cada -->
+    <!-- Uma caixa, vários endereços -->
+    <section class="identities">
+      <h2 data-i18n="ident_title">One mailbox, several addresses</h2>
+      <p data-i18n="ident_intro">An iCloud account is not an address — it is a mailbox that receives on several: the Apple ID, the @icloud.com ones, your own domain, the Hide My Email aliases. They all land in the same inbox, so connecting each as a separate account would show you the same mail three times. What actually differs is which address the message goes out as.</p>
+      <div class="modes-list">
+        <div class="mode-item">
+          <div class="mode-title" data-i18n="ident_proven_title">proven</div>
+          <p class="mode-desc" data-i18n="ident_proven_desc">The address appears in the From: of something in your Sent folder. The server has already accepted sending as it — that is history, not a guess.</p>
+        </div>
+        <div class="mode-item">
+          <div class="mode-title" data-i18n="ident_receives_title">receives</div>
+          <p class="mode-desc" data-i18n="ident_receives_desc">The address appears in the To: of mail that arrived. It proves the mailbox receives on it, which is not the same as being allowed to send from it.</p>
+        </div>
+      </div>
+      <div class="code-block">
+        <code><span class="prompt">$ </span><span class="cmd">mymailforai identities</span></code>
+        <code><span class="prompt">$ </span><span class="cmd">mymailforai identities --send-as you@yourdomain.com</span></code>
+      </div>
+      <p data-i18n="ident_reply">Replies pick the identity on their own: a message that arrived for you@yourdomain.com is answered from you@yourdomain.com, not from whichever address you happened to log in with.</p>
+    </section>
+
     <section class="modes">
       <h2 data-i18n="modes_title">Execution Modes</h2>
       <div class="modes-list">

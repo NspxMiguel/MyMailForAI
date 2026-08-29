@@ -1,5 +1,25 @@
 import Foundation
 
+/// Um endereço da mesma caixa. Não é outra conta: a entrada é a mesma, o que
+/// muda é por qual endereço a mensagem sai.
+struct Identity: Codable, Identifiable, Equatable {
+    var address: String
+    var name: String?
+    var proven: Bool
+    var sent: Int
+    var received: Int
+    var id: String { address }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        address = try c.decode(String.self, forKey: .address)
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        proven = try c.decodeIfPresent(Bool.self, forKey: .proven) ?? false
+        sent = try c.decodeIfPresent(Int.self, forKey: .sent) ?? 0
+        received = try c.decodeIfPresent(Int.self, forKey: .received) ?? 0
+    }
+}
+
 struct Account: Codable, Identifiable, Equatable {
     var address: String
     var displayName: String?
@@ -11,6 +31,8 @@ struct Account: Codable, Identifiable, Equatable {
     var sentToday: Int
     var dailyLimit: Int
     var isDefault: Bool
+    var identities: [Identity]
+    var sendAs: String
 
     var id: String { address }
 
@@ -23,6 +45,27 @@ struct Account: Codable, Identifiable, Equatable {
         case sentToday = "sent_today"
         case dailyLimit = "daily_limit"
         case isDefault = "is_default"
+        case identities
+        case sendAs = "send_as"
+    }
+
+    /// Decodificação tolerante: uma config gravada por uma versão anterior não
+    /// tem `identities` nem `send_as`, e o painel inteiro ficaria em branco por
+    /// causa de duas chaves ausentes.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        address = try c.decode(String.self, forKey: .address)
+        displayName = try c.decodeIfPresent(String.self, forKey: .displayName)
+        provider = try c.decodeIfPresent(String.self, forKey: .provider) ?? "custom"
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "ask"
+        askCoversMailbox = try c.decodeIfPresent(Bool.self, forKey: .askCoversMailbox) ?? false
+        unread = try c.decodeIfPresent(Int.self, forKey: .unread)
+        pending = try c.decodeIfPresent(Int.self, forKey: .pending) ?? 0
+        sentToday = try c.decodeIfPresent(Int.self, forKey: .sentToday) ?? 0
+        dailyLimit = try c.decodeIfPresent(Int.self, forKey: .dailyLimit) ?? 50
+        isDefault = try c.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
+        identities = try c.decodeIfPresent([Identity].self, forKey: .identities) ?? []
+        sendAs = try c.decodeIfPresent(String.self, forKey: .sendAs) ?? address
     }
 }
 

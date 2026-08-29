@@ -9,7 +9,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from . import accounts as acc
-from . import approvals, gate, imapc, keychain, smtpc
+from . import approvals, gate, identities, imapc, keychain, smtpc
 from .i18n import T
 from .paths import ensure_attach_dir
 
@@ -18,13 +18,42 @@ class ActionError(RuntimeError):
     pass
 
 
+def _email_puro(valor: str) -> str:
+    import email.utils
+    return (email.utils.parseaddr(valor)[1] or valor).lower().strip()
+
+
 def _conta(address: Optional[str]) -> Dict[str, Any]:
     return acc.get(address)
 
 
 def _resumo_destino(payload: Dict[str, Any]) -> str:
     destinos = ", ".join(payload.get("to") or []) or "?"
-    return f"→ {destinos} · {payload.get('subject') or '(sem assunto)'}"
+    resumo = f"→ {destinos} · {payload.get('subject') or '(sem assunto)'}"
+    # o remetente entra no resumo só quando não é o de sempre: ele precisa ver,
+    # antes de confirmar, se a mensagem vai sair por outro endereço dele
+    if payload.get("from"):
+        resumo = f"{payload['from']} {resumo}"
+    return resumo
+
+
+def _remetente(conta: Dict[str, Any], pedido: Optional[str]) -> Optional[str]:
+    """Confere o endereço escolhido contra os que a caixa tem de verdade.
+
+    O servidor recusaria um From estranho no meio do envio, com uma mensagem
+    de SMTP que não ajuda ninguém. Melhor recusar aqui, dizendo quais existem.
+    """
+    if not pedido:
+        return conta.get("send_as")
+    pedido = pedido.strip().lower()
+    conhecidos = [i["address"] for i in (conta.get("identities") or [])]
+    if not conhecidos or pedido in conhecidos:
+        return pedido
+    raise ActionError(T(
+        f"'{pedido}' não é um endereço desta caixa. Ela tem: {', '.join(conhecidos)}. "
+        "Rode 'mymailforai identities --scan' se você acabou de criar um.",
+        f"'{pedido}' is not an address of this mailbox. It has: {', '.join(conhecidos)}. "
+        "Run 'mymailforai identities --scan' if you just created one."))
 
 
 # ------------------------------------------------------------------- leitura
@@ -49,6 +78,8 @@ def list_accounts(with_unread: bool = False) -> Dict[str, Any]:
             "ask_covers_mailbox": bool(conta.get("ask_covers_mailbox")),
             "unread": nao_lidos,
             "pending": len(approvals.pending(endereco)),
+            "identities": conta.get("identities") or [],
+            "send_as": conta.get("send_as") or endereco,
             "sent_today": approvals.sent_today(endereco),
             "daily_limit": int(conta.get("daily_limit", 50)),
             "is_default": endereco == cfg.get("default_account"),
@@ -125,7 +156,8 @@ def _executar(conta: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
             body=payload.get("body", ""), cc=payload.get("cc"),
             html=payload.get("html") or None, attachments=payload.get("attachments") or [],
             in_reply_to=payload.get("in_reply_to") or None,
-            references=payload.get("references") or None)
+            references=payload.get("references") or None,
+            from_address=payload.get("from") or None)
         if kind == "draft":
             with imapc.connect(conta) as conn:
                 pasta = imapc.special_folder(conn, "drafts") or "Drafts"
@@ -178,27 +210,40 @@ def _executar(conta: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def send_email(to, subject: str, body: str, account: Optional[str] = None,
                cc=None, bcc=None, html: Optional[str] = None,
-               attachments: Optional[List[str]] = None, agent: str = "claude") -> Dict[str, Any]:
+               attachments: Optional[List[str]] = None, from_address: Optional[str] = None,
+               agent: str = "claude") -> Dict[str, Any]:
     conta = _conta(account)
     payload = {"kind": "send", "to": smtpc._lista(to), "cc": smtpc._lista(cc),
                "bcc": smtpc._lista(bcc), "subject": subject, "body": body,
-               "html": html or "", "attachments": attachments or []}
+               "html": html or "", "attachments": attachments or [],
+               "from": _remetente(conta, from_address)}
     return _passar_pelo_freio(conta, "send", payload, _resumo_destino(payload),
                               (body or "")[:2000], agent)
 
 
 def reply_email(uid: int, body: str, account: Optional[str] = None, folder: str = "INBOX",
                 reply_all: bool = False, attachments: Optional[List[str]] = None,
-                quote: bool = True, agent: str = "claude") -> Dict[str, Any]:
+                quote: bool = True, from_address: Optional[str] = None,
+                agent: str = "claude") -> Dict[str, Any]:
     conta = _conta(account)
     with imapc.connect(conta) as conn:
         original = imapc.fetch(conn, int(uid), folder=folder)
     destino = original.get("reply_to") or original.get("from")
+    # Responder por onde a mensagem chegou: se ela veio para miguel@nspx.dev,
+    # responder como claude@nspx.dev confundiria quem está do outro lado.
+    remetente = _remetente(conta, from_address)
+    if not from_address and not conta.get("send_as"):
+        meus = {i["address"] for i in (conta.get("identities") or [])}
+        for endereco in smtpc._lista(original.get("to")) + smtpc._lista(original.get("cc")):
+            limpo = _email_puro(endereco)
+            if limpo in meus:
+                remetente = limpo
+                break
     cc = []
     if reply_all:
-        meu = conta["address"].lower()
+        meus_todos = {i["address"] for i in (conta.get("identities") or [])} or {conta["address"].lower()}
         cc = [e for e in smtpc._lista(original.get("to")) + smtpc._lista(original.get("cc"))
-              if meu not in e.lower()]
+              if _email_puro(e) not in meus_todos]
     assunto = original.get("subject") or ""
     if not assunto.lower().startswith("re:"):
         assunto = f"Re: {assunto}"
@@ -207,13 +252,14 @@ def reply_email(uid: int, body: str, account: Optional[str] = None, folder: str 
                "subject": assunto, "body": corpo, "html": "",
                "attachments": attachments or [],
                "in_reply_to": original.get("message_id"),
-               "references": original.get("references")}
+               "references": original.get("references"), "from": remetente}
     return _passar_pelo_freio(conta, "reply", payload, _resumo_destino(payload),
                               (body or "")[:2000], agent)
 
 
 def forward_email(uid: int, to, account: Optional[str] = None, folder: str = "INBOX",
-                  body: str = "", agent: str = "claude") -> Dict[str, Any]:
+                  body: str = "", from_address: Optional[str] = None,
+                  agent: str = "claude") -> Dict[str, Any]:
     conta = _conta(account)
     with imapc.connect(conta) as conn:
         original = imapc.fetch(conn, int(uid), folder=folder)
@@ -222,16 +268,18 @@ def forward_email(uid: int, to, account: Optional[str] = None, folder: str = "IN
         assunto = f"Fwd: {assunto}"
     payload = {"kind": "send", "to": smtpc._lista(to), "cc": [], "bcc": [],
                "subject": assunto, "body": smtpc.forward_body(original, body),
-               "html": "", "attachments": []}
+               "html": "", "attachments": [], "from": _remetente(conta, from_address)}
     return _passar_pelo_freio(conta, "forward", payload, _resumo_destino(payload),
                               (body or "")[:2000], agent)
 
 
 def save_draft(to, subject: str, body: str, account: Optional[str] = None,
-               cc=None, agent: str = "claude") -> Dict[str, Any]:
+               cc=None, from_address: Optional[str] = None,
+               agent: str = "claude") -> Dict[str, Any]:
     conta = _conta(account)
     payload = {"kind": "draft", "to": smtpc._lista(to), "cc": smtpc._lista(cc),
-               "subject": subject, "body": body}
+               "subject": subject, "body": body,
+               "from": _remetente(conta, from_address)}
     return _passar_pelo_freio(conta, "draft", payload, _resumo_destino(payload),
                               (body or "")[:2000], agent)
 
@@ -310,6 +358,38 @@ def reject(item_id: str, reason: str = "") -> Dict[str, Any]:
                   item_id=item_id, detail=reason)
     return {"id": item_id, "status": "rejected", "reason": reason,
             "message": T("recusado — nada foi enviado", "rejected — nothing was sent")}
+
+
+# ---------------------------------------------------------------- identidades
+
+def scan_identities(account: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Descobre os outros endereços da caixa e guarda o que achou."""
+    conta = _conta(account)
+    achadas = identities.scan(conta)
+    cfg = acc.load()
+    cfg["accounts"][conta["address"]]["identities"] = achadas
+    acc.save(cfg)
+    return achadas
+
+
+def set_send_as(address: str, account: Optional[str] = None,
+                name: Optional[str] = None) -> Dict[str, Any]:
+    conta = _conta(account)
+    escolhido = _remetente(conta, address)
+    cfg = acc.load()
+    cfg["accounts"][conta["address"]]["send_as"] = escolhido
+    if name is not None:
+        lista = cfg["accounts"][conta["address"]].get("identities") or []
+        for item in lista:
+            if item["address"] == escolhido:
+                item["name"] = name
+                break
+        else:
+            lista.append({"address": escolhido, "name": name, "proven": False,
+                          "sent": 0, "received": 0})
+        cfg["accounts"][conta["address"]]["identities"] = lista
+    acc.save(cfg)
+    return {"account": conta["address"], "send_as": escolhido, "name": name}
 
 
 # --------------------------------------------------------------------- login

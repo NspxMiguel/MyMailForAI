@@ -30,10 +30,18 @@ def build(account: Dict[str, Any], to, subject: str, body: str,
           cc=None, bcc=None, html: Optional[str] = None,
           attachments: Optional[List[str]] = None,
           in_reply_to: Optional[str] = None, references: Optional[str] = None,
-          ) -> EmailMessage:
+          from_address: Optional[str] = None) -> EmailMessage:
     msg = EmailMessage()
-    remetente = account["address"]
-    nome = account.get("display_name") or ""
+    # Uma caixa do iCloud recebe por vários endereços; qual deles vai no From é
+    # escolha, não consequência de com qual endereço se conectou.
+    remetente = (from_address or account.get("send_as") or account["address"]).strip()
+    # "claude <miguel@nspx.dev>" é mentira. O nome da conta só vale para o
+    # endereço da conta; para outra identidade vale o nome que ela já usou.
+    if remetente.lower() == account["address"].lower():
+        nome = account.get("display_name") or ""
+    else:
+        nome = next((i.get("name") or "" for i in (account.get("identities") or [])
+                     if i["address"] == remetente.lower()), "")
     msg["From"] = email.utils.formataddr((nome, remetente)) if nome else remetente
     destinos = _lista(to)
     if not destinos:

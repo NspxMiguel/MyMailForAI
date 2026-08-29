@@ -109,8 +109,18 @@ def cmd_login(args) -> int:
         return _fail(str(erro), args.json)
     acc.add(conta, make_default=args.default or not acc.names())
 
+    # Uma caixa costuma ter mais de um endereço. Descobrir isso na hora do login
+    # evita ele achar que precisa "logar" cada um — é a mesma caixa.
+    outros = []
+    if not args.no_verify:
+        try:
+            outros = actions.scan_identities(endereco)
+        except Exception:
+            outros = []
+
     payload = {"address": endereco, "provider": conta["provider"], "keychain": onde,
-               "mode": conta["mode"], "verified": not args.no_verify, **prova}
+               "mode": conta["mode"], "verified": not args.no_verify,
+               "identities": outros, **prova}
     if args.json:
         return _out(payload, True)
     print(T(f"\n✓ {endereco} conectado. Senha no {onde}, nunca em arquivo.",
@@ -118,6 +128,16 @@ def cmd_login(args) -> int:
     if prova:
         print(T(f"  {prova['folders']} pastas, {prova['unread']} não lidos na entrada.",
                 f"  {prova['folders']} folders, {prova['unread']} unread in the inbox."))
+    if len(outros) > 1:
+        print(T(f"\n  Esta caixa recebe por {len(outros)} endereços — é uma caixa só,"
+                " não precisa conectar cada um:",
+                f"\n  This mailbox receives on {len(outros)} addresses — it is one mailbox,"
+                " no need to connect each:"))
+        for item in outros[:8]:
+            prova_txt = T("já enviou", "already sent") if item["proven"] else T("recebe", "receives")
+            print(f"     {item['address']:<38} {prova_txt}")
+        print(T("     escolha por qual mandar:  mymailforai identities --send-as <endereço>",
+                "     pick which one to send from:  mymailforai identities --send-as <address>"))
     print(T(f"  Modo: {_modo_legivel(conta['mode'])} — troque na barra de menus.",
             f"  Mode: {_modo_legivel(conta['mode'])} — change it in the menu bar."))
     return 0
@@ -297,7 +317,8 @@ def cmd_send(args) -> int:
     try:
         r = actions.send_email(args.to, args.subject, _corpo(args), args.account,
                                cc=args.cc, bcc=args.bcc, html=args.html,
-                               attachments=args.attach, agent=args.agent)
+                               attachments=args.attach, from_address=args.from_address,
+                               agent=args.agent)
     except Exception as erro:
         return _fail(str(erro), args.json)
     return _resultado(r, args.json)
@@ -315,7 +336,8 @@ def cmd_reply(args) -> int:
     try:
         r = actions.reply_email(args.uid, _corpo(args), args.account, folder=args.folder,
                                 reply_all=args.all, attachments=args.attach,
-                                quote=not args.no_quote, agent=args.agent)
+                                quote=not args.no_quote, from_address=args.from_address,
+                                agent=args.agent)
     except Exception as erro:
         return _fail(str(erro), args.json)
     return _resultado(r, args.json)
@@ -324,7 +346,8 @@ def cmd_reply(args) -> int:
 def cmd_forward(args) -> int:
     try:
         r = actions.forward_email(args.uid, args.to, args.account, folder=args.folder,
-                                  body=_corpo(args), agent=args.agent)
+                                  body=_corpo(args), from_address=args.from_address,
+                                  agent=args.agent)
     except Exception as erro:
         return _fail(str(erro), args.json)
     return _resultado(r, args.json)
@@ -333,7 +356,8 @@ def cmd_forward(args) -> int:
 def cmd_draft(args) -> int:
     try:
         r = actions.save_draft(args.to, args.subject, _corpo(args), args.account,
-                               cc=args.cc, agent=args.agent)
+                               cc=args.cc, from_address=args.from_address,
+                               agent=args.agent)
     except Exception as erro:
         return _fail(str(erro), args.json)
     return _resultado(r, args.json)
@@ -414,6 +438,41 @@ def cmd_history(args) -> int:
         return _out(registros, True)
     for r in registros:
         print(f"{r['at']}  {r['account']}  {r['action']:<8} {r['status']:<9} {r['summary']}")
+    return 0
+
+
+def cmd_identities(args) -> int:
+    """Os outros endereços da mesma caixa — o que ele chamou de 'outros e-mails'."""
+    try:
+        if args.send_as:
+            r = actions.set_send_as(args.send_as, args.account, name=args.name)
+            return _out(r, args.json, T(f"enviando como {r['send_as']}",
+                                        f"sending as {r['send_as']}"))
+        if args.scan:
+            lista = actions.scan_identities(args.account)
+        else:
+            conta = acc.get(args.account)
+            lista = conta.get("identities") or actions.scan_identities(args.account)
+    except Exception as erro:
+        return _fail(str(erro), args.json)
+    conta = acc.get(args.account)
+    if args.json:
+        return _out({"account": conta["address"],
+                     "send_as": conta.get("send_as") or conta["address"],
+                     "identities": lista}, True)
+    atual = (conta.get("send_as") or conta["address"]).lower()
+    print(T("Endereços desta caixa (é uma caixa só — todos caem na mesma entrada):",
+            "Addresses of this mailbox (it is one mailbox — they all land in the same inbox):"))
+    for item in lista:
+        marca = "*" if item["address"] == atual else " "
+        prova = T("já enviou por ele", "already sent from it") if item["proven"] \
+            else T("recebe por ele", "receives on it")
+        print(f" {marca} {item['address']:<40} {prova}"
+              f"  ({item['sent']}↑ {item['received']}↓)")
+    print(T(f"\nMandando como: {atual}"
+            "\nTrocar:  mymailforai identities --send-as outro@endereco",
+            f"\nSending as: {atual}"
+            "\nChange:  mymailforai identities --send-as other@address"))
     return 0
 
 
@@ -585,6 +644,15 @@ def build_parser() -> argparse.ArgumentParser:
                           "in 'ask', also ask for move/archive/trash"))
     s.add_argument("--no-strict", dest="strict", action="store_false")
 
+    s = add("identities", cmd_identities,
+            T("os outros endereços da mesma caixa", "the other addresses of the same mailbox"))
+    s.add_argument("--scan", action="store_true",
+                   help=T("varrer a caixa de novo", "scan the mailbox again"))
+    s.add_argument("--send-as", help=T("passar a enviar por este endereço",
+                                       "start sending from this address"))
+    s.add_argument("--name", help=T("nome que aparece junto do endereço",
+                                    "display name shown next to the address"))
+
     add("folders", cmd_folders, T("as pastas da conta", "the account folders"))
 
     s = add("inbox", cmd_inbox, T("as últimas da entrada", "latest in the inbox"))
@@ -609,6 +677,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     def escrita(s):
         s.add_argument("--agent", default="claude")
+        s.add_argument("--from", dest="from_address",
+                       help=T("enviar por outro endereço da mesma caixa",
+                              "send from another address of the same mailbox"))
         return s
 
     s = escrita(add("send", cmd_send, T("enviar", "send")))

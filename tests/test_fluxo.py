@@ -197,6 +197,31 @@ js("trash", str(sobrou))
 ok("manda para a lixeira", len(dublê.PASTAS["Trash"]["msgs"]) == 1)
 ok("a entrada ficou vazia", js("inbox", "-n", "10") == [])
 
+# ------------------------------------------------------------ identidades
+
+print("\nidentidades")
+# A caixa recebeu por outro endereço do mesmo domínio: é isso que o scan acha.
+dublê.semear("cliente@fora.dev", "outro@mymailforai.local",
+             "para outro endereço", "chegou por outro endereço da mesma caixa")
+achadas = js("identities", "--scan")["identities"]
+enderecos = {i["address"] for i in achadas}
+ok("acha o endereço com que conectou", CONTA in enderecos, str(enderecos))
+ok("acha o outro endereço da mesma caixa", "outro@mymailforai.local" in enderecos, str(enderecos))
+ok("marca como provado quem já apareceu no From dos Enviados",
+   any(i["proven"] for i in achadas), str(achadas))
+
+js("identities", "--send-as", "outro@mymailforai.local")
+antes = len(dublê.ENVIADAS)
+js("send", "-t", "gente@fora.dev", "-s", "de outro endereço", "-b", "corpo")
+ok("envia pelo endereço escolhido",
+   "From: outro@mymailforai.local" in dublê.ENVIADAS[-1].replace("\r", ""),
+   dublê.ENVIADAS[-1].split("\n")[0] if len(dublê.ENVIADAS) > antes else "nada saiu")
+
+codigo, _, erro = rodar("send", "-t", "a@b.dev", "-s", "x", "-b", "y",
+                        "--from", "naoexiste@outra.dev", "--json", esperar_sucesso=False)
+ok("recusa um remetente que não é da caixa", codigo != 0 and "not an address" in erro, erro[:120])
+js("identities", "--send-as", CONTA)
+
 # ------------------------------------------------------------------ o teto
 
 print("\nfreios")

@@ -70,6 +70,13 @@ enum L {
     static var claudeConnect: String { t("Ligar ao Claude Code", "Connect to Claude Code") }
     static var refresh: String { t("Atualizar", "Refresh") }
     static var language: String { t("Idioma", "Language") }
+    static var sendAs: String { t("Enviar como", "Send as") }
+    static var rescan: String { t("Procurar de novo", "Scan again") }
+    static var sameMailbox: String {
+        t("Todos caem na mesma entrada — não precisa conectar cada um.",
+          "They all land in the same inbox — no need to connect each one.")
+    }
+    static var receivesOnly: String { t("só recebe", "receives only") }
 
     static func modeName(_ m: String) -> String {
         switch m {

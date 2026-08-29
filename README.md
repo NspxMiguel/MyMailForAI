@@ -22,7 +22,7 @@ in the macOS Keychain. It never touches a file.
 
 Full access, and full means full: folders, search on the server, whole message
 bodies, attachments, send, reply in-thread, forward, drafts, read/starred flags,
-move, archive and trash. Sixteen MCP tools, one command to wire them up:
+move, archive and trash. Seventeen MCP tools, one command to wire them up:
 
 ```bash
 mymailforai connect      # registers the MCP server with Claude Code
@@ -31,6 +31,33 @@ mymailforai connect      # registers the MCP server with Claude Code
 There is deliberately **no permanent-delete tool.** Trash means moving to the
 Trash folder, which you can undo. An agent should not be holding an operation
 with no way back.
+
+## One mailbox, several addresses
+
+An iCloud account is not an address — it is a mailbox that receives on several:
+the Apple ID, the `@icloud.com` ones, your own domain, the Hide My Email
+aliases. They all land in the same inbox, so connecting each as a separate
+account would show you the same mail three times. What actually differs is
+**which address the message goes out as**.
+
+`login` scans the mailbox and tells you what it found, and there is a picker in
+the panel:
+
+```bash
+mymailforai identities                       # what this mailbox answers to
+mymailforai identities --send-as you@yourdomain.com --name "Your Name"
+mymailforai send --from other@you.com -t a@b.com -s "..." -b "..."
+```
+
+Two grades of evidence, and the difference matters: an address in the `From:`
+of something in your Sent folder is **proven** — the server has already accepted
+sending as it. An address that only shows up in `To:`/`Delivered-To:` is known
+to **receive**, which is not the same as being allowed to send. The list says
+which is which instead of guessing.
+
+Replies pick the identity on their own: a message that arrived for
+`you@yourdomain.com` is answered from `you@yourdomain.com`, not from whichever
+address you happened to log in with.
 
 ## The brake
 

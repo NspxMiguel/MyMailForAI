@@ -119,9 +119,14 @@ struct PanelView: View {
                         Text(conta.address).font(.system(size: 12, weight: .medium)).lineLimit(1)
                         Spacer()
                         Button {
-                            contaExpandida = contaExpandida == conta.address ? nil : conta.address
+                            if contaExpandida == nil && store.accounts.count == 1 {
+                                contaExpandida = ""      // fechar o que abriu sozinho
+                            } else {
+                                contaExpandida = contaExpandida == conta.address ? "" : conta.address
+                            }
                         } label: {
                             Image(systemName: contaExpandida == conta.address
+                                  || (contaExpandida == nil && store.accounts.count == 1)
                                   ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 9))
                         }
@@ -151,7 +156,39 @@ struct PanelView: View {
                     Text(L.modeHelp(conta.mode))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
 
-                    if contaExpandida == conta.address {
+                    // Com uma conta só não há o que escolher: mostrar já aberto
+                    // poupa um clique e revela os outros endereços da caixa,
+                    // que é justamente o que ninguém adivinha que existe.
+                    if contaExpandida == conta.address
+                        || (contaExpandida == nil && store.accounts.count == 1) {
+                        if conta.identities.count > 1 {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(L.sendAs)
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Button(L.rescan) { store.rescanIdentities(conta.address) }
+                                        .buttonStyle(.plain)
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Picker("", selection: Binding(
+                                    get: { conta.sendAs },
+                                    set: { store.setSendAs($0, account: conta.address) })) {
+                                    ForEach(conta.identities) { ident in
+                                        Text(ident.proven ? ident.address
+                                             : "\(ident.address)  ·  \(L.receivesOnly)")
+                                            .tag(ident.address)
+                                    }
+                                }
+                                .labelsHidden()
+                                .font(.system(size: 11))
+                                Text(L.sameMailbox)
+                                    .font(.system(size: 9)).foregroundStyle(.tertiary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                         if conta.mode == "ask" {
                             Toggle(L.strict, isOn: Binding(
                                 get: { conta.askCoversMailbox },

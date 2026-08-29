@@ -37,6 +37,17 @@ TOOLS = [
      "description": "Só os endereços conectados, sem tocar no servidor.",
      "inputSchema": {"type": "object", "properties": {}}},
 
+    {"name": "list_identities",
+     "description": "Os outros endereços da MESMA caixa. Uma conta de iCloud recebe por vários "
+                    "(o Apple ID, os @icloud.com, o domínio próprio, os apelidos do Ocultar Meu "
+                    "E-mail) e todos caem na mesma entrada — não são contas separadas. "
+                    "'proven' significa que o servidor já aceitou enviar por aquele endereço. "
+                    "Use o campo 'from' do send_email para escolher por qual sair.",
+     "inputSchema": {"type": "object", "properties": {
+         "account": _CONTA,
+         "rescan": {"type": "boolean", "default": False,
+                    "description": "varrer a caixa de novo em vez de usar o que já foi achado"}}}},
+
     {"name": "list_folders",
      "description": "As pastas da conta, com o papel de cada uma (sent, drafts, trash, "
                     "archive, junk) quando o servidor informa.",
@@ -86,6 +97,8 @@ TOOLS = [
          "cc": {"type": "string"}, "bcc": {"type": "string"},
          "attachments": {"type": "array", "items": {"type": "string"},
                          "description": "caminhos de arquivo locais"},
+         "from": {"type": "string",
+                  "description": "por qual endereço da caixa mandar; veja list_identities"},
          "account": _CONTA}, "required": ["to", "subject", "body"]}},
 
     {"name": "reply_email",
@@ -95,7 +108,11 @@ TOOLS = [
      "inputSchema": {"type": "object", "properties": {
          "uid": _UID, "body": {"type": "string"}, "folder": _PASTA,
          "reply_all": {"type": "boolean", "default": False},
-         "quote": {"type": "boolean", "default": True}, "account": _CONTA},
+         "quote": {"type": "boolean", "default": True},
+         "from": {"type": "string",
+                  "description": "por qual endereço responder; o padrão é o endereço "
+                                 "desta caixa para o qual a mensagem foi enviada"},
+         "account": _CONTA},
          "required": ["uid", "body"]}},
 
     {"name": "forward_email",
@@ -155,6 +172,12 @@ def _call(name: str, args: Dict[str, Any]) -> str:
     if name == "list_accounts":
         cfg = acc.load()
         return _json({"default": cfg.get("default_account"), "accounts": list(cfg.get("accounts", {}))})
+    if name == "list_identities":
+        if args.get("rescan"):
+            return _json(actions.scan_identities(conta))
+        c = acc.get(conta)
+        return _json({"account": c["address"], "send_as": c.get("send_as") or c["address"],
+                      "identities": c.get("identities") or actions.scan_identities(conta)})
     if name == "list_folders":
         return _json(actions.list_folders(conta))
     if name == "list_inbox":
@@ -178,12 +201,14 @@ def _call(name: str, args: Dict[str, Any]) -> str:
     if name == "send_email":
         return _json(actions.send_email(args["to"], args.get("subject", ""), args.get("body", ""),
                                         conta, cc=args.get("cc"), bcc=args.get("bcc"),
-                                        attachments=args.get("attachments")))
+                                        attachments=args.get("attachments"),
+                                        from_address=args.get("from")))
     if name == "reply_email":
         return _json(actions.reply_email(int(args["uid"]), args.get("body", ""), conta,
                                          folder=args.get("folder", "INBOX"),
                                          reply_all=bool(args.get("reply_all")),
-                                         quote=args.get("quote", True)))
+                                         quote=args.get("quote", True),
+                                         from_address=args.get("from")))
     if name == "forward_email":
         return _json(actions.forward_email(int(args["uid"]), args["to"], conta,
                                            folder=args.get("folder", "INBOX"),
