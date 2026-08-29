@@ -461,6 +461,14 @@ def move(conn, uid: int, folder: str, destino: str) -> None:
     mensagem já marcada na pasta, inclusive as que não são nossas.
     """
     select(conn, folder, readonly=False)
+    # UID MOVE sobre UID que não existe é um no-op que responde OK: o servidor
+    # cumpre o padrão e a gente saía dizendo "movido" sem ter movido nada. Isso
+    # não é detalhe — script que arquiva o que já tratou passava a mentir, e o
+    # e-mail voltava na passada seguinte para sempre.
+    estado, dados = conn.uid("SEARCH", "UID", str(uid))
+    if estado != "OK" or not (dados and dados[0] and dados[0].split()):
+        raise MailError(T(f"não existe mensagem {uid} em '{folder}'",
+                          f"there is no message {uid} in '{folder}'"))
     tem = conn.capabilities
     if "MOVE" in tem:
         _ok(conn.uid("MOVE", str(uid), _quote(destino)), "MOVE")
