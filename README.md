@@ -2,6 +2,16 @@
 
 Your own mailbox, full access for your agent, and the brake in the menu bar.
 
+> [!WARNING]
+> **Use it at your own risk.** This hands an AI agent full read and write access
+> to a real mailbox — yours. An agent can misread an email and act on it, and an
+> email is untrusted input: anyone who can write to you can put instructions in
+> front of it. The brake in the menu bar exists for that reason; leaving it on
+> *Automatic* means messages leave without you seeing them first.
+>
+> The software comes with no warranty of any kind. The author is not liable for
+> messages sent, deleted or disclosed by an agent you gave access to.
+
 > **Not the same as [MailForAI](https://github.com/NspxMiguel/MailForAI).**
 > One letter apart, opposite premises. **MyMailForAI** — this one — hands the
 > agent *your* mailbox, with full access, and the point is the brake: a switch in
