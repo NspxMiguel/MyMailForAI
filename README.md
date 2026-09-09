@@ -2,6 +2,13 @@
 
 Your own mailbox, full access for your agent, and the brake in the menu bar.
 
+> **Not the same as [MailForAI](https://github.com/NspxMiguel/MailForAI).**
+> One letter apart, opposite premises. **MyMailForAI** — this one — hands the
+> agent *your* mailbox, with full access, and the point is the brake: a switch in
+> the menu bar you can hit at any moment. **MailForAI** gives the agent a mailbox
+> of its own instead, leashed by an allowlist and a daily cap. Pick this one if
+> the agent should read your mail; pick that one if it should have an address.
+
 Giving an AI agent a mailbox of its own is one problem. Giving it *yours* is a
 different one, and the hard part is not access — it is the brake. MyMailForAI
 connects the account you already use, hands the agent everything in it, and puts
@@ -208,3 +215,7 @@ removes the app.
 ## License
 
 MIT.
+
+## Documentação
+
+Índice: [`docs/INDEX.md`](docs/INDEX.md)
