@@ -33,7 +33,8 @@ struct PanelView: View {
             Divider()
             rodape
         }
-        .frame(width: 380, height: 540)
+        // Fixed size in the popover (its contentSize is set), free to grow in the window.
+        .frame(minWidth: 380, maxWidth: .infinity, minHeight: 540, maxHeight: .infinity)
         .id(store.langTick)
         .onAppear { store.refresh() }
     }

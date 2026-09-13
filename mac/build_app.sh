@@ -53,7 +53,7 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" <<PLIST
     <string>${VERSION}</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
-    <!-- só barra de menus: sem ícone no Dock e sem janela. É o pedido. -->
+    <!-- Menu bar app; the Dock icon appears only while its window is open. -->
     <key>LSUIElement</key>
     <true/>
     <key>NSHumanReadableCopyright</key>

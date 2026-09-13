@@ -1,21 +1,36 @@
 import AppKit
 import SwiftUI
 
-/// Não existe janela neste app, e isso é o pedido — não um atalho. O MailForAI
-/// tem app com abas; aqui o que ele quis foi só o item da barra de menus.
+/// A menu bar item plus a regular window.
 ///
-/// O item é um `NSStatusItem` na mão, e não `MenuBarExtra`, por um motivo que
-/// custou caro no MacTray: numa barra lotada o macOS põe o item novo na ponta
-/// esquerda, que o notch cobre, e o app nasce invisível justo para quem tem a
-/// barra cheia. A posição preferida precisa ser semeada antes de criar o item,
-/// e o `MenuBarExtra` não deixa escolher o `autosaveName`.
-final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+/// The item is a hand-made `NSStatusItem`, not `MenuBarExtra`: on a full menu
+/// bar macOS puts a new item at the far left, under the notch, and the app is
+/// born invisible to exactly the people with a crowded bar. The preferred
+/// position has to be seeded before the item exists, and `MenuBarExtra` does not
+/// let you pick the `autosaveName`.
+///
+/// The window exists because even that is not always enough: with a bar full
+/// enough, no position is visible. Opening the app from Launchpad, Spotlight or
+/// the Dock shows the same panel in a window, with a Dock icon while it is open.
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowDelegate {
     private var item: NSStatusItem!
     private var popover: NSPopover!
     private var observador: NSObjectProtocol?
     private var monitorDeFora: Any?
 
     private let autosave = "MyMailForAI"
+    private var window: NSWindow?
+    private var launchedAsLoginItem = false
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Only the launch event carries this; by didFinishLaunching it is gone.
+        if let event = NSAppleEventManager.shared().currentAppleEvent,
+            event.eventID == kAEOpenApplication,
+            event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+        {
+            launchedAsLoginItem = true
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         semearPosicao()
@@ -46,11 +61,82 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 Task { @MainActor in self?.desenhar() }
             }
 
-        // Primeira execução: abre o painel sozinho. Um app que não mostra nada
-        // ao instalar passa por quebrado, e o ícone da barra é discreto demais.
-        if !UserDefaults.standard.bool(forKey: "jaAbriuUmaVez") {
-            UserDefaults.standard.set(true, forKey: "jaAbriuUmaVez")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.abrir() }
+        // Opened by hand (Launchpad, Spotlight, Finder, Dock): show the window, so
+        // the app is visible whatever the menu bar looks like. Started at login:
+        // stay in the menu bar only.
+        if !launchedAsLoginItem {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                Task { @MainActor in self?.showWindow() }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.rescueHiddenItem() }
+    }
+
+    /// Opening the app again while it runs (Dock, Launchpad, Spotlight) lands here.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        Task { @MainActor in showWindow() }
+        return true
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    @MainActor
+    private func showWindow() {
+        if popover.isShown { popover.performClose(nil) }
+        if window == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: 680),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false)
+            window.title = "MyMailForAI"
+            window.contentViewController = NSHostingController(rootView: PanelView(store: Store.shared))
+            window.contentMinSize = NSSize(width: 380, height: 540)
+            window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 440, height: 680))
+            window.center()
+            window.setFrameAutosaveName("MyMailForAIWindow")
+            window.delegate = self
+            self.window = window
+        }
+        Task { @MainActor in Store.shared.refresh() }
+        // A Dock icon while the window is open: Cmd-Tab and the Dock find it.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === window else { return }
+        // Back to a menu bar app. Deferred so AppKit finishes closing first.
+        DispatchQueue.main.async { NSApp.setActivationPolicy(.accessory) }
+    }
+
+    /// A position saved earlier (a drag, or an older build) can still leave the
+    /// item under the notch. When the item's button is not inside the part of
+    /// the menu bar right of the notch, seed the position next to the clock
+    /// again and recreate the item. Removing an item deletes its saved position
+    /// after the removal, so the key is written after a delay, not right away.
+    private func rescueHiddenItem() {
+        guard let buttonWindow = item.button?.window, let screen = buttonWindow.screen ?? NSScreen.main else {
+            return
+        }
+        let frame = buttonWindow.frame
+        let visibleMinX = screen.auxiliaryTopRightArea.map { screen.frame.minX + $0.minX } ?? screen.frame.minX
+        let onScreen = frame.minX >= visibleMinX && frame.maxX <= screen.frame.maxX && frame.width > 0
+        guard !onScreen, !UserDefaults.standard.bool(forKey: "rescuedHiddenItem") else { return }
+        UserDefaults.standard.set(true, forKey: "rescuedHiddenItem")
+
+        NSStatusBar.system.removeStatusItem(item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            UserDefaults.standard.set(4.0, forKey: "NSStatusItem Preferred Position \(self.autosave)")
+            self.item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+            self.item.autosaveName = self.autosave
+            self.item.button?.target = self
+            self.item.button?.action = #selector(self.alternar(_:))
+            UserDefaults.standard.set(4.0, forKey: "NSStatusItem Preferred Position \(self.autosave)")
+            Task { @MainActor in self.desenhar() }
         }
     }
 
